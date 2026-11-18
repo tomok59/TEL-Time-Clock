@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Time Clock</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%231f5eff'/%3E%3Cpath d='M32 16v17l11 7' stroke='white' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="config.js"></script>
+<style>
+  :root {
+    --bg: #f4f6fa; --card: #fff; --ink: #14213d; --muted: #5b6577; --line: #e2e6ee;
+    --blue: #1f5eff; --blue-ink: #fff; --green: #138a52; --amber: #b86e00; --red: #c62828;
+    --radius: 14px; --shadow: 0 1px 2px rgba(20,33,61,.06), 0 4px 16px rgba(20,33,61,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; flex-shrink: 0; }
+  .brand svg { width: 26px; height: 26px; }
+  .who { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); min-width: 0; }
+  .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  main { max-width: 520px; margin: 0 auto; padding: 18px 16px 40px; }
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+  select, input, textarea { width: 100%; font: inherit; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  textarea { min-height: 70px; resize: vertical; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 14px 16px; font-weight: 650; }
+  button:disabled { opacity: .55; cursor: default; }
+  .btn-primary { background: var(--blue); color: var(--blue-ink); width: 100%; font-size: 18px; padding: 18px; }
+  .btn-green { background: var(--green); color: #fff; width: 100%; font-size: 18px; padding: 18px; }
+  .btn-amber { background: #fff4e0; color: var(--amber); width: 100%; border: 1px solid #f3d7a6; }
+  .btn-red { background: var(--red); color: #fff; width: 100%; font-size: 18px; padding: 18px; }
+  .btn-ghost { white-space: nowrap; flex-shrink: 0; background: transparent; color: var(--muted); padding: 6px 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
+  .btn-soft { background: #eef2fb; color: var(--ink); width: 100%; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stack > * + * { margin-top: 10px; }
+  .clock { font-variant-numeric: tabular-nums; font-size: 44px; font-weight: 750; letter-spacing: -1px; margin: 6px 0 2px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 650; padding: 4px 10px; border-radius: 999px; }
+  .pill.on { background: #e3f5ec; color: var(--green); }
+  .pill.lunch { background: #fff4e0; color: var(--amber); }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 15px; margin: 12px 0 16px; }
+  .facts dt { color: var(--muted); } .facts dd { margin: 0; font-weight: 600; }
+  .banner { border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 15px; }
+  .banner.info { background: #e8f0ff; color: #163b9a; }
+  .banner.ok { background: #e3f5ec; color: #0d6b3e; }
+  .banner.warn { background: #fff4e0; color: #7a4a00; }
+  .banner.err { background: #fdecec; color: #8e1c1c; }
+  .hidden { display: none !important; }
+  #gis-button { display: flex; justify-content: center; min-height: 44px; margin: 18px 0 6px; }
+  footer { text-align: center; font-size: 12px; color: var(--muted); padding: 0 16px 24px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#1f5eff"/><path d="M32 16v17l11 7" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/></svg>
+    <span id="brand-name">Time Clock</span>
+  </div>
+  <div class="who hidden" id="who"><span id="who-email"></span><button class="btn-ghost" id="signout">Sign out</button></div>
+</header>
+
+<main>
+  <div id="banner"></div>
+
+  <!-- Signed out -->
+  <section class="card hidden" id="view-signin">
+    <h1>Welcome, coach</h1>
+    <p class="muted">Sign in with your <strong id="domain-label">work</strong> Google account to clock in. If your browser has several Google accounts, pick your work account in the window that opens.</p>
+    <div id="gis-button"></div>
+    <p class="muted small" id="gis-fallback" style="text-align:center"></p>
+  </section>
+
+  <!-- Loading -->
+  <section class="card" id="view-loading"><p class="muted"><span class="spinner"></span>Loading…</p></section>
+
+  <!-- Signed in -->
+  <section class="hidden" id="view-main">
+    <div class="card">
+      <h1 id="hello">Hi!</h1>
+
+      <!-- Not clocked in -->
+      <div id="state-off">
+        <p class="muted">You're not clocked in.</p>
+        <label for="location">Where are you working?</label>
+        <select id="location"></select>
+        <div style="margin-top:16px"><button class="btn-primary" id="btn-in">Clock in</button></div>
+      </div>
+
+      <!-- Clocked in -->
+      <div id="state-on" class="hidden">
+        <span class="pill on" id="pill"><span class="dot"></span><span id="pill-text">Clocked in</span></span>
+        <div class="clock" id="worked">0:00:00</div>
+        <div class="muted small">worked this session</div>
+        <dl class="facts">
+          <dt>Location</dt><dd id="f-loc"></dd>
+          <dt>Clocked in</dt><dd id="f-in"></dd>
+          <dt>Lunch</dt><dd id="f-lunch">Not taken</dd>
+        </dl>
+        <div id="lunch-reminder" class="banner warn hidden"></div>
+        <div class="stack">
+          <button class="btn-soft" id="btn-lunch-start">Start lunch</button>
+          <button class="btn-green hidden" id="btn-lunch-end">End lunch</button>
+          <button class="btn-red" id="btn-out">Clock out</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Running late or can't make it?</h2>
+      <div class="row" id="notice-buttons">
+        <button class="btn-amber" id="btn-show-late">I'm running late</button>
+        <button class="btn-amber" id="btn-show-absent">I can't attend</button>
+      </div>
+
+      <form id="form-late" class="hidden">
+        <label for="late-loc">Location</label><select id="late-loc"></select>
+        <label for="late-min">About how late?</label>
+        <select id="late-min">
+          <option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15" selected>15 minutes</option>
+          <option value="20">20 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option>
+          <option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option>
+        </select>
+        <label for="late-note">Note (optional)</label><textarea id="late-note" maxlength="500" placeholder="e.g. traffic on the 805"></textarea>
+        <div class="row" style="margin-top:14px"><button type="button" class="btn-soft" data-cancel>Cancel</button><button type="submit" class="btn-primary" style="font-size:16px;padding:14px">Send</button></div>
+      </form>
+
+      <form id="form-absent" class="hidden">
+        <label for="abs-loc">Location</label><select id="abs-loc"></select>
+        <label for="abs-date">Date</label><input type="date" id="abs-date">
+        <label for="abs-note">Reason (optional)</label><textarea id="abs-note" maxlength="500" placeholder="e.g. sick"></textarea>
+        <div class="row" style="margin-top:14px"><button type="button" class="btn-soft" data-cancel>Cancel</button><button type="submit" class="btn-primary" style="font-size:16px;padding:14px">Send</button></div>
+      </form>
+    </div>
+  </section>
+</main>
+<footer id="footer"></footer>
+
+<script>
+(function () {
+  'use strict';
+  var CFG = window.TIMECLOCK_CONFIG || {};
+  var LS_KEY = 'telTimeclock.session';
+  var $ = function (id) { return document.getElementById(id); };
+
+  var S = { session: null, expires: 0, profile: null, open: null, offset: 0, lunchReq: 5, busy: false };
+
+  // ---------- storage ----------
+  function loadSession() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (s && s.token && s.expires > Date.now()) { S.session = s.token; S.expires = s.expires; }
+      else localStorage.removeItem(LS_KEY);
+    } catch (e) { /* storage unavailable: session lives in memory */ }
+  }
+  function saveSession(token, expires) {
+    S.session = token; S.expires = expires;
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ token: token, expires: expires })); } catch (e) {}
+  }
+  function clearSession() {
+    S.session = null; S.profile = null; S.open = null;
+    try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  }
+
+  // ---------- API ----------
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  function api(action, data, attempt) {
+    attempt = attempt || 0;
+    var payload = Object.assign({ action: action, session: S.session }, data || {});
+    if (!payload.requestId && action !== 'login' && action !== 'status') payload.requestId = uuid();
+    var t0 = performance.now();
+    // text/plain avoids a CORS preflight; Apps Script answers with a redirect that allows any origin.
+    return fetch(CFG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), redirect: 'follow' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (res) {
+        var rt = Math.round(performance.now() - t0);
+        footer('Saved · ' + rt + ' ms round trip' + (res.ms != null ? ' (' + res.ms + ' ms on server)' : ''));
+        if (res.serverTime) S.offset = res.serverTime - Date.now();
+        if (!res.ok) { var err = new Error(res.error || 'Request failed'); err.code = res.code; throw err; }
+        return res;
+      })
+      .catch(function (err) {
+        if (err.code) throw err; // application error: don't retry
+        if (attempt < 2) return new Promise(function (ok) { setTimeout(ok, 600 * (attempt + 1)); })
+          .then(function () { return api(action, payload, attempt + 1); });
+        var e2 = new Error('Could not reach the time clock. Check your connection and try again.'); e2.code = 'NETWORK'; throw e2;
+      });
+  }
+
+  // ---------- UI helpers ----------
+  function footer(text) { $('footer').textContent = text; }
+  function show(id) { ['view-signin', 'view-loading', 'view-main'].forEach(function (v) { $(v).classList.toggle('hidden', v !== id); }); }
+  function banner(kind, text) {
+    var b = $('banner');
+    if (!text) { b.innerHTML = ''; return; }
+    b.innerHTML = '';
+    var d = document.createElement('div');
+    d.className = 'banner ' + kind; d.setAttribute('role', kind === 'err' ? 'alert' : 'status'); d.textContent = text;
+    b.appendChild(d);
+  }
+  function fmtTime(ms) { return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  function fmtDur(ms) {
+    ms = Math.max(0, ms); var s = Math.floor(ms / 1000);
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+  }
+  function now() { return Date.now() + S.offset; }
+  function todayISO() { var d = new Date(now()); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+
+  function withBusy(btn, label, promiseFn) {
+    if (S.busy) return;
+    S.busy = true;
+    var buttons = document.querySelectorAll('#view-main button');
+    buttons.forEach(function (b) { b.disabled = true; });
+    var original = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span>' + label;
+    return promiseFn().then(function (res) {
+      applyState(res);
+      var notes = (res.notes || []);
+      var warn = res.closed && res.closed.flags && res.closed.flags.length;
+      banner(warn ? 'warn' : 'ok', notes.join(' ') + (warn ? ' Flagged for review: ' + res.closed.flags.join(', ') + '.' : ''));
+    }).catch(handleError).then(function () {
+      S.busy = false; btn.innerHTML = original;
+      buttons.forEach(function (b) { b.disabled = false; });
+      render();
+    });
+  }
+
+  function handleError(err) {
+    if (err.code === 'AUTH' || err.code === 'NOT_A_COACH' || err.code === 'WRONG_DOMAIN') {
+      clearSession(); render();
+      banner('err', err.message);
+      return;
+    }
+    banner('err', err.message);
+  }
+
+  function applyState(res) {
+    if (res.session) saveSession(res.session, res.sessionExpires);
+    if (res.profile) S.profile = res.profile;
+    S.open = res.open || null;
+    if (res.settings && res.settings.lunchRequiredHours) S.lunchReq = res.settings.lunchRequiredHours;
+  }
+
+  function fillLocations(select, keep) {
+    var prev = keep ? select.value : '';
+    var remembered = '';
+    try { remembered = localStorage.getItem('telTimeclock.lastLocation') || ''; } catch (e) {}
+    select.innerHTML = '';
+    (S.profile.locations || []).forEach(function (loc) {
+      var o = document.createElement('option'); o.value = loc; o.textContent = loc; select.appendChild(o);
+    });
+    var want = prev || remembered;
+    if (want && S.profile.locations.indexOf(want) >= 0) select.value = want;
+  }
+
+  // ---------- render ----------
+  function render() {
+    if (!S.session) {
+      $('who').classList.add('hidden');
+      show('view-signin');
+      renderGisButton();
+      return;
+    }
+    if (!S.profile) { show('view-loading'); return; }
+    show('view-main');
+    $('who').classList.remove('hidden');
+    $('who-email').textContent = S.profile.email;
+    $('hello').textContent = 'Hi, ' + S.profile.name.split(' ')[0] + '!';
+
+    var hasLocs = S.profile.locations.length > 0;
+    ['location', 'late-loc', 'abs-loc'].forEach(function (id) { fillLocations($(id), true); });
+    if (!hasLocs) banner('warn', 'You have no locations assigned yet. Ask your admin to add them on the Coaches tab.');
+    $('btn-in').disabled = S.busy || !hasLocs;
+
+    var o = S.open;
+    $('state-off').classList.toggle('hidden', !!o);
+    $('state-on').classList.toggle('hidden', !o);
+    if (o) {
+      var onLunch = !!(o.lunchStart && !o.lunchEnd);
+      $('f-loc').textContent = o.location;
+      $('f-in').textContent = fmtTime(o.clockIn);
+      $('f-lunch').textContent = !o.lunchStart ? 'Not taken' : onLunch ? 'Started ' + fmtTime(o.lunchStart) : fmtTime(o.lunchStart) + ' – ' + fmtTime(o.lunchEnd);
+      $('pill').className = 'pill ' + (onLunch ? 'lunch' : 'on');
+      $('pill-text').textContent = onLunch ? 'On lunch' : 'Clocked in';
+      $('btn-lunch-start').classList.toggle('hidden', !!o.lunchStart);
+      $('btn-lunch-end').classList.toggle('hidden', !onLunch);
+      resetOutConfirm();
+    }
+    tick();
+  }
+
+  function workedMs() {
+    var o = S.open; if (!o) return 0;
+    var end = now();
+    var lunch = 0;
+    if (o.lunchStart) lunch = (o.lunchEnd || end) - o.lunchStart;
+    return end - o.clockIn - lunch;
+  }
+
+  function tick() {
+    if (!S.open) return;
+    var w = workedMs();
+    $('worked').textContent = fmtDur(w);
+    var rem = $('lunch-reminder');
+    var needLunch = !S.open.lunchStart && w >= (S.lunchReq - 0.5) * 3600000;
+    rem.classList.toggle('hidden', !needLunch);
+    if (needLunch) rem.textContent = 'Shifts of ' + S.lunchReq + '+ hours need a lunch break — remember to clock your lunch.';
+  }
+  setInterval(tick, 1000);
+
+  // ---------- Google sign-in ----------
+  var gisReady = false;
+  function initGis() {
+    if (!window.google || !google.accounts || !google.accounts.id) return;
+    google.accounts.id.initialize({
+      client_id: CFG.GOOGLE_CLIENT_ID,
+      callback: onGoogleCredential,
+      hd: CFG.ALLOWED_DOMAIN,          // account chooser only offers work-domain accounts
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      ux_mode: 'popup'
+    });
+    gisReady = true;
+    render();
+  }
+  function renderGisButton() {
+    var el = $('gis-button');
+    if (!gisReady) { $('gis-fallback').textContent = 'Loading Google sign-in…'; return; }
+    $('gis-fallback').textContent = '';
+    el.innerHTML = '';
+    google.accounts.id.renderButton(el, { type: 'standard', theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill', width: 280 });
+  }
+  function onGoogleCredential(resp) {
+    show('view-loading'); banner('', '');
+    api('login', { idToken: resp.credential }).then(function (res) {
+      applyState(res);
+      if (res.notes && res.notes.length) banner('info', res.notes.join(' '));
+      render();
+    }).catch(function (err) { clearSession(); render(); banner('err', err.message); });
+  }
+  window.__tcInitGis = initGis;
+
+  // ---------- actions ----------
+  $('btn-in').addEventListener('click', function () {
+    var loc = $('location').value;
+    try { localStorage.setItem('telTimeclock.lastLocation', loc); } catch (e) {}
+    withBusy(this, 'Clocking in…', function () { return api('clockIn', { location: loc }); });
+  });
+  $('btn-lunch-start').addEventListener('click', function () {
+    withBusy(this, 'Starting lunch…', function () { return api('lunchStart'); });
+  });
+  $('btn-lunch-end').addEventListener('click', function () {
+    withBusy(this, 'Ending lunch…', function () { return api('lunchEnd'); });
+  });
+
+  var outConfirmTimer = null;
+  function resetOutConfirm() { clearTimeout(outConfirmTimer); outConfirmTimer = null; $('btn-out').textContent = 'Clock out'; $('btn-out').dataset.armed = ''; }
+  $('btn-out').addEventListener('click', function () {
+    var btn = this;
+    if (!btn.dataset.armed) {   // two taps to clock out, so a stray tap doesn't end a shift
+      btn.dataset.armed = '1';
+      var onLunch = S.open && S.open.lunchStart && !S.open.lunchEnd;
+      btn.textContent = onLunch ? 'Tap again — this also ends your lunch' : 'Tap again to clock out';
+      outConfirmTimer = setTimeout(resetOutConfirm, 4000);
+      return;
+    }
+    clearTimeout(outConfirmTimer); btn.dataset.armed = '';
+    withBusy(btn, 'Clocking out…', function () { return api('clockOut'); });
+  });
+
+  function openForm(id) {
+    $('notice-buttons').classList.add('hidden');
+    ['form-late', 'form-absent'].forEach(function (f) { $(f).classList.toggle('hidden', f !== id); });
+    if (id === 'form-absent') { $('abs-date').min = todayISO(); if (!$('abs-date').value) $('abs-date').value = todayISO(); }
+  }
+  function closeForms() {
+    $('notice-buttons').classList.remove('hidden');
+    ['form-late', 'form-absent'].forEach(function (f) { $(f).classList.add('hidden'); $(f).reset(); });
+  }
+  $('btn-show-late').addEventListener('click', function () { openForm('form-late'); });
+  $('btn-show-absent').addEventListener('click', function () { openForm('form-absent'); });
+  document.querySelectorAll('[data-cancel]').forEach(function (b) { b.addEventListener('click', closeForms); });
+
+  $('form-late').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var btn = this.querySelector('[type=submit]');
+    withBusy(btn, 'Sending…', function () {
+      return api('notice', { type: 'late', location: $('late-loc').value, minutes: Number($('late-min').value), note: $('late-note').value })
+        .then(function (r) { closeForms(); return r; });
+    });
+  });
+  $('form-absent').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var btn = this.querySelector('[type=submit]');
+    withBusy(btn, 'Sending…', function () {
+      return api('notice', { type: 'absent', location: $('abs-loc').value, date: $('abs-date').value, note: $('abs-note').value })
+        .then(function (r) { closeForms(); return r; });
+    });
+  });
+
+  $('signout').addEventListener('click', function () {
+    clearSession();
+    try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+    banner('info', 'Signed out.');
+    render();
+  });
+
+  // ---------- boot ----------
+  document.title = (CFG.ORG_NAME ? CFG.ORG_NAME + ' ' : '') + 'Time Clock';
+  $('brand-name').textContent = document.title;
+  $('domain-label').textContent = '@' + (CFG.ALLOWED_DOMAIN || 'work');
+  if (!CFG.API_URL || CFG.API_URL.indexOf('PASTE_') >= 0) banner('err', 'This page is not configured yet: set API_URL and GOOGLE_CLIENT_ID in config.js.');
+
+  // Warm up the Apps Script container so the first real action is fast.
+  try { fetch(CFG.API_URL, { method: 'GET' }).catch(function () {}); } catch (e) {}
+
+  loadSession();
+  if (S.session) {
+    show('view-loading');
+    api('status').then(function (res) {
+      applyState(res);
+      if (res.notes && res.notes.length) banner('info', res.notes.join(' '));
+      render();
+    }).catch(function (err) { handleError(err); render(); });
+  } else {
+    render();
+  }
+
+  // Load Google Identity Services last; it calls initGis when ready.
+  var gs = document.createElement('script');
+  gs.src = 'https://accounts.google.com/gsi/client';
+  gs.async = true; gs.defer = true;
+  gs.onload = initGis;
+  gs.onerror = function () { $('gis-fallback').textContent = 'Could not load Google sign-in. Check your connection or ad-blocker and reload.'; };
+  document.head.appendChild(gs);
+})();
+</script>
+</body>
+</html>
