@@ -5,6 +5,6 @@ window.TIMECLOCK_CONFIG = {
   // OAuth 2.0 Web client ID from Google Cloud Console (same value as Settings → OAUTH_CLIENT_ID in the sheet)
   GOOGLE_CLIENT_ID: '666999959775-an8rhpdu8rj2pidouts5cq0bmiieiumn.apps.googleusercontent.com',
   // Work domain coaches must sign in with
-  ALLOWED_DOMAIN: 'edladder.org',
+  ALLOWED_DOMAIN: 'theedladder.org',
   ORG_NAME: 'TEL'
 };
