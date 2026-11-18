@@ -5,21 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Time Clock</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%231f5eff'/%3E%3Cpath d='M32 16v17l11 7' stroke='white' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="logo.png">
+<meta name="theme-color" content="#192A51">
 <script src="config.js"></script>
 <style>
   :root {
-    --bg: #f4f6fa; --card: #fff; --ink: #14213d; --muted: #5b6577; --line: #e2e6ee;
-    --blue: #1f5eff; --blue-ink: #fff; --green: #138a52; --amber: #b86e00; --red: #c62828;
-    --radius: 14px; --shadow: 0 1px 2px rgba(20,33,61,.06), 0 4px 16px rgba(20,33,61,.06);
+    /* Brand: blue #4582D9 · cream #F7F4EA · navy #192A51 · orange #F0803C */
+    --blue: #4582D9; --cream: #F7F4EA; --navy: #192A51; --orange: #F0803C;
+    --bg: var(--cream); --card: #fff; --ink: var(--navy); --muted: #5a6482; --line: #e7e1d0;
+    --blue-tint: #e6eefa; --orange-tint: #fdeee2; --red: #b3261e;
+    --radius: 14px; --shadow: 0 1px 2px rgba(25,42,81,.06), 0 4px 16px rgba(25,42,81,.07);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--ink);
     font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 14px 18px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; }
+    padding: 14px 18px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; border-bottom: 3px solid var(--orange); }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; flex-shrink: 0; }
   .brand svg { width: 26px; height: 26px; }
+  .brand img { height: 34px; width: auto; display: block; }
+  .hero-logo { display: block; max-height: 72px; max-width: 70%; margin: 0 auto 16px; }
   .who { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); min-width: 0; }
   .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   main { max-width: 520px; margin: 0 auto; padding: 18px 16px 40px; }
@@ -30,30 +35,31 @@
   .muted { color: var(--muted); }
   .small { font-size: 13px; }
   label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
-  select, input, textarea { width: 100%; font: inherit; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  select, input, textarea { width: 100%; font: inherit; padding: 12px; border: 1px solid #d9d2bf; border-radius: 10px; background: #fff; color: var(--ink); }
   textarea { min-height: 70px; resize: vertical; }
   button { font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 14px 16px; font-weight: 650; }
   button:disabled { opacity: .55; cursor: default; }
-  .btn-primary { background: var(--blue); color: var(--blue-ink); width: 100%; font-size: 18px; padding: 18px; }
-  .btn-green { background: var(--green); color: #fff; width: 100%; font-size: 18px; padding: 18px; }
-  .btn-amber { background: #fff4e0; color: var(--amber); width: 100%; border: 1px solid #f3d7a6; }
-  .btn-red { background: var(--red); color: #fff; width: 100%; font-size: 18px; padding: 18px; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+  .btn-primary { background: var(--blue); color: #fff; width: 100%; font-size: 18px; padding: 18px; }
+  .btn-orange { background: var(--orange); color: var(--navy); width: 100%; font-size: 18px; padding: 18px; }
+  .btn-outline { background: var(--orange-tint); color: var(--navy); width: 100%; border: 1.5px solid var(--orange); }
+  .btn-red { background: var(--navy); color: #fff; width: 100%; font-size: 18px; padding: 18px; }
   .btn-ghost { white-space: nowrap; flex-shrink: 0; background: transparent; color: var(--muted); padding: 6px 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
-  .btn-soft { background: #eef2fb; color: var(--ink); width: 100%; }
+  .btn-soft { background: var(--blue-tint); color: var(--navy); width: 100%; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stack > * + * { margin-top: 10px; }
   .clock { font-variant-numeric: tabular-nums; font-size: 44px; font-weight: 750; letter-spacing: -1px; margin: 6px 0 2px; }
   .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 650; padding: 4px 10px; border-radius: 999px; }
-  .pill.on { background: #e3f5ec; color: var(--green); }
-  .pill.lunch { background: #fff4e0; color: var(--amber); }
+  .pill.on { background: var(--blue-tint); color: #2b5fa8; }
+  .pill.lunch { background: var(--orange-tint); color: #9a4612; }
   .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
   .facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 15px; margin: 12px 0 16px; }
   .facts dt { color: var(--muted); } .facts dd { margin: 0; font-weight: 600; }
   .banner { border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 15px; }
-  .banner.info { background: #e8f0ff; color: #163b9a; }
-  .banner.ok { background: #e3f5ec; color: #0d6b3e; }
-  .banner.warn { background: #fff4e0; color: #7a4a00; }
-  .banner.err { background: #fdecec; color: #8e1c1c; }
+  .banner.info { background: var(--blue-tint); color: var(--navy); }
+  .banner.ok { background: var(--blue-tint); color: var(--navy); border-left: 4px solid var(--blue); }
+  .banner.warn { background: var(--orange-tint); color: var(--navy); border-left: 4px solid var(--orange); }
+  .banner.err { background: #fbe9e7; color: #8c1d18; border-left: 4px solid var(--red); }
   .hidden { display: none !important; }
   #gis-button { display: flex; justify-content: center; min-height: 44px; margin: 18px 0 6px; }
   footer { text-align: center; font-size: 12px; color: var(--muted); padding: 0 16px 24px; }
@@ -64,7 +70,8 @@
 <body>
 <header>
   <div class="brand">
-    <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#1f5eff"/><path d="M32 16v17l11 7" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/></svg>
+    <img id="logo" src="logo.png" alt="TEL" onerror="this.remove();document.getElementById('logo-fallback').style.display='block'">
+    <svg id="logo-fallback" style="display:none" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#4582D9"/><path d="M32 16v17l11 7" stroke="#F7F4EA" stroke-width="6" fill="none" stroke-linecap="round"/></svg>
     <span id="brand-name">Time Clock</span>
   </div>
   <div class="who hidden" id="who"><span id="who-email"></span><button class="btn-ghost" id="signout">Sign out</button></div>
@@ -75,6 +82,7 @@
 
   <!-- Signed out -->
   <section class="card hidden" id="view-signin">
+    <img class="hero-logo" src="logo.png" alt="" onerror="this.remove()">
     <h1>Welcome, coach</h1>
     <p class="muted">Sign in with your <strong id="domain-label">work</strong> Google account to clock in. If your browser has several Google accounts, pick your work account in the window that opens.</p>
     <div id="gis-button"></div>
@@ -110,7 +118,7 @@
         <div id="lunch-reminder" class="banner warn hidden"></div>
         <div class="stack">
           <button class="btn-soft" id="btn-lunch-start">Start lunch</button>
-          <button class="btn-green hidden" id="btn-lunch-end">End lunch</button>
+          <button class="btn-orange hidden" id="btn-lunch-end">End lunch</button>
           <button class="btn-red" id="btn-out">Clock out</button>
         </div>
       </div>
@@ -119,8 +127,8 @@
     <div class="card">
       <h2>Running late or can't make it?</h2>
       <div class="row" id="notice-buttons">
-        <button class="btn-amber" id="btn-show-late">I'm running late</button>
-        <button class="btn-amber" id="btn-show-absent">I can't attend</button>
+        <button class="btn-outline" id="btn-show-late">I'm running late</button>
+        <button class="btn-outline" id="btn-show-absent">I can't attend</button>
       </div>
 
       <form id="form-late" class="hidden">
@@ -424,7 +432,7 @@
 
   // ---------- boot ----------
   document.title = (CFG.ORG_NAME ? CFG.ORG_NAME + ' ' : '') + 'Time Clock';
-  $('brand-name').textContent = document.title;
+  $('brand-name').textContent = 'Time Clock';
   $('domain-label').textContent = '@' + (CFG.ALLOWED_DOMAIN || 'work');
   if (!CFG.API_URL || CFG.API_URL.indexOf('PASTE_') >= 0) banner('err', 'This page is not configured yet: set API_URL and GOOGLE_CLIENT_ID in config.js.');
 
